@@ -8,27 +8,32 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
+import { CheckoutForm } from "../checkout/checkout-form";
 
 export function CartDrawer() {
   const [open, setOpen] = useState(false);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
   const { items, total, updateQuantity, removeItem, clear } = useCart();
   const { user } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
-  const handleCheckout = async () => {
+  const handleCheckout = async (data: { shippingAddressId: number; paymentMethod: string }) => {
     if (!user) {
       setLocation("/auth");
       return;
     }
 
     try {
+      setIsCheckingOut(true);
       await apiRequest("POST", "/api/orders", {
         total,
         items: items.map(item => ({
           productId: item.productId,
           quantity: item.quantity
-        }))
+        })),
+        shippingAddressId: data.shippingAddressId,
+        paymentMethod: data.paymentMethod
       });
 
       toast({
@@ -44,6 +49,8 @@ export function CartDrawer() {
         description: (error as Error).message,
         variant: "destructive"
       });
+    } finally {
+      setIsCheckingOut(false);
     }
   };
 
@@ -75,7 +82,7 @@ export function CartDrawer() {
               {items.map((item) => (
                 <div key={item.productId} className="flex py-4">
                   <img
-                    src={item.product.image}
+                    src={item.product.image || ""}
                     alt={item.product.name}
                     className="h-24 w-24 rounded-md object-cover"
                   />
@@ -125,9 +132,16 @@ export function CartDrawer() {
                 <span className="font-medium">${total.toFixed(2)}</span>
               </div>
               <Separator className="my-4" />
-              <Button onClick={handleCheckout} className="w-full">
-                {user ? "Checkout" : "Login to Checkout"}
-              </Button>
+              {user ? (
+                <CheckoutForm 
+                  onSubmit={handleCheckout}
+                  isSubmitting={isCheckingOut}
+                />
+              ) : (
+                <Button onClick={() => setLocation("/auth")} className="w-full">
+                  Login to Checkout
+                </Button>
+              )}
             </div>
           </div>
         )}

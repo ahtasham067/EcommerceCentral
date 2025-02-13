@@ -1,11 +1,11 @@
 import { IStorage } from "./types";
 import { 
-  User, Product, Category, Order, 
-  users, products, categories, orders,
-  type InsertUser, type InsertProduct, type InsertOrder 
+  User, Product, Category, Order, Address,
+  users, products, categories, orders, addresses,
+  type InsertUser, type InsertProduct, type InsertOrder, type InsertAddress 
 } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -22,6 +22,7 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
+  // User operations
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
@@ -39,6 +40,65 @@ export class DatabaseStorage implements IStorage {
     return newUser;
   }
 
+  // Address operations
+  async getAddresses(userId: number): Promise<Address[]> {
+    return await db.select()
+      .from(addresses)
+      .where(eq(addresses.userId, userId));
+  }
+
+  async getAddress(id: number): Promise<Address | undefined> {
+    const [address] = await db.select()
+      .from(addresses)
+      .where(eq(addresses.id, id));
+    return address;
+  }
+
+  async createAddress(userId: number, address: InsertAddress): Promise<Address> {
+    // If this is the first address or marked as default, reset other default addresses
+    if (address.isDefault) {
+      await db.update(addresses)
+        .set({ isDefault: false })
+        .where(eq(addresses.userId, userId));
+    }
+
+    const [newAddress] = await db.insert(addresses)
+      .values({ ...address, userId })
+      .returning();
+    return newAddress;
+  }
+
+  async updateAddress(id: number, address: Partial<Address>): Promise<Address | undefined> {
+    // If setting as default, reset other default addresses
+    if (address.isDefault) {
+      const [existingAddress] = await db.select()
+        .from(addresses)
+        .where(eq(addresses.id, id));
+      if (existingAddress) {
+        await db.update(addresses)
+          .set({ isDefault: false })
+          .where(and(
+            eq(addresses.userId, existingAddress.userId),
+            eq(addresses.isDefault, true)
+          ));
+      }
+    }
+
+    const [updatedAddress] = await db.update(addresses)
+      .set(address)
+      .where(eq(addresses.id, id))
+      .returning();
+    return updatedAddress;
+  }
+
+  async deleteAddress(id: number): Promise<boolean> {
+    const [deletedAddress] = await db.delete(addresses)
+      .where(eq(addresses.id, id))
+      .returning();
+    return !!deletedAddress;
+  }
+
+  // Product operations
   async getProducts(): Promise<Product[]> {
     return await db.select().from(products);
   }
@@ -70,6 +130,7 @@ export class DatabaseStorage implements IStorage {
     return !!deletedProduct;
   }
 
+  // Order operations
   async getOrders(): Promise<Order[]> {
     return await db.select().from(orders);
   }
