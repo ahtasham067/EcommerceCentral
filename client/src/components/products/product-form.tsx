@@ -40,13 +40,21 @@ export function ProductForm({ onSubmit, initialData, isSubmitting }: ProductForm
       price: initialData?.price ?? 0,
       image: initialData?.image ?? "",
       inventory: initialData?.inventory ?? 0,
-      categoryId: initialData?.categoryId ?? 1,
+      categoryId: initialData?.categoryId ?? 1, // Default to the General category
     },
   });
 
   const handleSubmit = async (data: ProductFormData) => {
     try {
-      await onSubmit(data);
+      // Ensure price and inventory are numbers
+      const processedData = {
+        ...data,
+        price: Number(data.price),
+        inventory: Number(data.inventory),
+        categoryId: 1, // Hardcode to the General category for now
+      };
+
+      await onSubmit(processedData);
       toast({
         title: `Product ${initialData ? "updated" : "created"} successfully`,
       });
@@ -103,7 +111,7 @@ export function ProductForm({ onSubmit, initialData, isSubmitting }: ProductForm
                     min="0"
                     step="0.01"
                     placeholder="0.00"
-                    onChange={(e) => onChange(parseFloat(e.target.value))}
+                    onChange={(e) => onChange(Number(e.target.value))}
                     {...field}
                   />
                 </FormControl>
@@ -123,7 +131,7 @@ export function ProductForm({ onSubmit, initialData, isSubmitting }: ProductForm
                     type="number"
                     min="0"
                     placeholder="0"
-                    onChange={(e) => onChange(parseInt(e.target.value, 10))}
+                    onChange={(e) => onChange(Number(e.target.value))}
                     {...field}
                   />
                 </FormControl>
