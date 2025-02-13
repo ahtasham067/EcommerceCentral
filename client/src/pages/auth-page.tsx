@@ -16,12 +16,6 @@ export default function AuthPage() {
   const [activeTab, setActiveTab] = useState("login");
   const [, setLocation] = useLocation();
 
-  // Redirect if already logged in
-  if (user) {
-    setLocation("/");
-    return null;
-  }
-
   const loginForm = useForm({
     resolver: zodResolver(insertUserSchema),
     defaultValues: {
@@ -37,6 +31,13 @@ export default function AuthPage() {
       password: "",
     },
   });
+
+  // Move redirect after all hooks
+  if (user) {
+    // Use useEffect to handle navigation after render
+    setTimeout(() => setLocation("/"), 0);
+    return null;
+  }
 
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
