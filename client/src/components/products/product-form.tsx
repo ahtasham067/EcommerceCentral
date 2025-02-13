@@ -15,6 +15,15 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
+type FormData = {
+  name: string;
+  description: string;
+  price: string;
+  image: string;
+  inventory: string;
+  categoryId: number;
+};
+
 type ProductFormProps = {
   onSubmit: (data: FormData) => Promise<void>;
   initialData?: Product;
@@ -23,21 +32,31 @@ type ProductFormProps = {
 
 export function ProductForm({ onSubmit, initialData, isSubmitting }: ProductFormProps) {
   const { toast } = useToast();
-  const form = useForm({
-    resolver: zodResolver(insertProductSchema),
+  const form = useForm<FormData>({
+    resolver: zodResolver(
+      insertProductSchema.extend({
+        price: insertProductSchema.shape.price.transform((v) => String(v)),
+        inventory: insertProductSchema.shape.inventory.transform((v) => String(v)),
+      })
+    ),
     defaultValues: {
       name: initialData?.name ?? "",
       description: initialData?.description ?? "",
-      price: initialData?.price ?? 0,
+      price: initialData?.price?.toString() ?? "0",
       image: initialData?.image ?? "",
-      inventory: initialData?.inventory ?? 0,
+      inventory: initialData?.inventory?.toString() ?? "0",
       categoryId: initialData?.categoryId ?? 1,
     },
   });
 
   const handleSubmit = async (data: FormData) => {
     try {
-      await onSubmit(data);
+      const processedData = {
+        ...data,
+        price: parseFloat(data.price),
+        inventory: parseInt(data.inventory, 10),
+      };
+      await onSubmit(processedData);
       toast({
         title: `Product ${initialData ? "updated" : "created"} successfully`,
       });
