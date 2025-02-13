@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -32,12 +32,11 @@ export default function AuthPage() {
     },
   });
 
-  // Move redirect after all hooks
-  if (user) {
-    // Use useEffect to handle navigation after render
-    setTimeout(() => setLocation("/"), 0);
-    return null;
-  }
+  useEffect(() => {
+    if (user) {
+      setLocation("/");
+    }
+  }, [user, setLocation]);
 
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
