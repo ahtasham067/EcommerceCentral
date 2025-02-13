@@ -25,7 +25,7 @@ const ORDER_STATUSES = ["pending", "processing", "shipped", "delivered", "cancel
 
 export default function AdminOrders() {
   const { toast } = useToast();
-  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<string>("all");
 
   const { data: orders, isLoading } = useQuery<Order[]>({
     queryKey: ["/api/orders"],
@@ -44,7 +44,7 @@ export default function AdminOrders() {
   });
 
   const filteredOrders = orders?.filter(
-    (order) => !selectedStatus || order.status === selectedStatus
+    (order) => selectedStatus === "all" || order.status === selectedStatus
   );
 
   if (isLoading) {
@@ -56,14 +56,14 @@ export default function AdminOrders() {
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold tracking-tight">Orders</h2>
         <Select
-          value={selectedStatus || ""}
-          onValueChange={(value) => setSelectedStatus(value || null)}
+          value={selectedStatus}
+          onValueChange={(value) => setSelectedStatus(value)}
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Orders</SelectItem>
+            <SelectItem value="all">All Orders</SelectItem>
             {ORDER_STATUSES.map((status) => (
               <SelectItem key={status} value={status} className="capitalize">
                 {status}
@@ -94,7 +94,7 @@ export default function AdminOrders() {
                 <TableRow key={order.id}>
                   <TableCell>#{order.id}</TableCell>
                   <TableCell>
-                    {format(new Date(order.createdAt), "MMM d, yyyy")}
+                    {format(new Date(order.createdAt || new Date()), "MMM d, yyyy")}
                   </TableCell>
                   <TableCell>User #{order.userId}</TableCell>
                   <TableCell>${order.total.toFixed(2)}</TableCell>
