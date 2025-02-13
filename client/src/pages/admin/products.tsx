@@ -31,6 +31,15 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+type ProductFormData = {
+  name: string;
+  description: string;
+  price: number;
+  image: string;
+  inventory: number;
+  categoryId: number;
+};
+
 export default function AdminProducts() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -42,7 +51,7 @@ export default function AdminProducts() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: FormData) => {
+    mutationFn: async (data: ProductFormData) => {
       await apiRequest("POST", "/api/products", data);
     },
     onSuccess: () => {
@@ -52,8 +61,8 @@ export default function AdminProducts() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (data: FormData & { id: number }) => {
-      await apiRequest("PATCH", `/api/products/${data.id}`, data);
+    mutationFn: async ({ id, ...data }: ProductFormData & { id: number }) => {
+      await apiRequest("PATCH", `/api/products/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
@@ -103,7 +112,7 @@ export default function AdminProducts() {
             <TableRow key={product.id}>
               <TableCell>
                 <img
-                  src={product.image}
+                  src={product.image || ""}
                   alt={product.name}
                   className="h-12 w-12 object-cover rounded"
                 />

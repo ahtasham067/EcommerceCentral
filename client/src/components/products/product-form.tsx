@@ -15,48 +15,38 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
-type FormData = {
+type ProductFormData = {
   name: string;
   description: string;
-  price: string;
+  price: number;
   image: string;
-  inventory: string;
+  inventory: number;
   categoryId: number;
 };
 
 type ProductFormProps = {
-  onSubmit: (data: FormData) => Promise<void>;
+  onSubmit: (data: ProductFormData) => Promise<void>;
   initialData?: Product;
   isSubmitting: boolean;
 };
 
 export function ProductForm({ onSubmit, initialData, isSubmitting }: ProductFormProps) {
   const { toast } = useToast();
-  const form = useForm<FormData>({
-    resolver: zodResolver(
-      insertProductSchema.extend({
-        price: insertProductSchema.shape.price.transform((v) => String(v)),
-        inventory: insertProductSchema.shape.inventory.transform((v) => String(v)),
-      })
-    ),
+  const form = useForm<ProductFormData>({
+    resolver: zodResolver(insertProductSchema),
     defaultValues: {
       name: initialData?.name ?? "",
       description: initialData?.description ?? "",
-      price: initialData?.price?.toString() ?? "0",
+      price: initialData?.price ?? 0,
       image: initialData?.image ?? "",
-      inventory: initialData?.inventory?.toString() ?? "0",
+      inventory: initialData?.inventory ?? 0,
       categoryId: initialData?.categoryId ?? 1,
     },
   });
 
-  const handleSubmit = async (data: FormData) => {
+  const handleSubmit = async (data: ProductFormData) => {
     try {
-      const processedData = {
-        ...data,
-        price: parseFloat(data.price),
-        inventory: parseInt(data.inventory, 10),
-      };
-      await onSubmit(processedData);
+      await onSubmit(data);
       toast({
         title: `Product ${initialData ? "updated" : "created"} successfully`,
       });
@@ -104,7 +94,7 @@ export function ProductForm({ onSubmit, initialData, isSubmitting }: ProductForm
           <FormField
             control={form.control}
             name="price"
-            render={({ field }) => (
+            render={({ field: { onChange, ...field } }) => (
               <FormItem>
                 <FormLabel>Price</FormLabel>
                 <FormControl>
@@ -113,6 +103,7 @@ export function ProductForm({ onSubmit, initialData, isSubmitting }: ProductForm
                     min="0"
                     step="0.01"
                     placeholder="0.00"
+                    onChange={(e) => onChange(parseFloat(e.target.value))}
                     {...field}
                   />
                 </FormControl>
@@ -124,7 +115,7 @@ export function ProductForm({ onSubmit, initialData, isSubmitting }: ProductForm
           <FormField
             control={form.control}
             name="inventory"
-            render={({ field }) => (
+            render={({ field: { onChange, ...field } }) => (
               <FormItem>
                 <FormLabel>Inventory</FormLabel>
                 <FormControl>
@@ -132,6 +123,7 @@ export function ProductForm({ onSubmit, initialData, isSubmitting }: ProductForm
                     type="number"
                     min="0"
                     placeholder="0"
+                    onChange={(e) => onChange(parseInt(e.target.value, 10))}
                     {...field}
                   />
                 </FormControl>
